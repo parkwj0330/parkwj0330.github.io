@@ -4,101 +4,82 @@
   <meta charset="UTF-8">
   <title>스카니아 50서버, 더메이 길드 게시판</title>
   <style>
-    body {
-      font-family: sans-serif;
-      padding: 20px;
-      background-color: #f9f9f9;
-    }
-    h1 {
-      color: #333;
-    }
-    form, .post {
-      background: #fff;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      margin-top: 20px;
-    }
-    label {
-      display: block;
-      margin-top: 10px;
-      font-weight: bold;
-    }
-    input, textarea {
-      width: 100%;
-      padding: 10px;
-      margin-top: 5px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-    button {
-      margin-top: 15px;
-      padding: 10px 20px;
-      background-color: #0066cc;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #004d99;
-    }
-    .post {
-      margin-bottom: 15px;
-    }
-    .post h3 {
-      margin: 0 0 5px;
-      color: #222;
-    }
-    .post p {
-      margin: 0;
-    }
+    body { font-family: sans-serif; padding: 20px; background: #f9f9f9; }
+    form, .post { background: #fff; padding: 20px; border-radius: 10px; margin-top: 20px; }
+    input, textarea { width: 100%; padding: 10px; margin-top: 8px; }
+    button { margin-top: 15px; padding: 10px 20px; background: #0066cc; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
+    .post { margin-bottom: 15px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
   </style>
 </head>
 <body>
   <h1>스카니아 50서버, 더메이 길드</h1>
 
   <form id="postForm">
-    <label for="title">글 제목</label>
-    <input type="text" id="title" name="title" placeholder="제목을 입력하세요" required>
+    <label>글 제목</label>
+    <input type="text" id="title" required>
 
-    <label for="content">내용</label>
-    <textarea id="content" name="content" rows="6" placeholder="내용을 입력하세요" required></textarea>
+    <label>내용</label>
+    <textarea id="content" rows="5" required></textarea>
 
     <button type="submit">글 등록</button>
   </form>
 
-  <hr>
-
   <h2>📋 작성된 글</h2>
-  <div id="postList">
-    <!-- 글 목록이 여기에 추가됩니다 -->
-  </div>
+  <div id="postList"></div>
+
+  <!-- Firebase 라이브러리 -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"></script>
 
   <script>
+    // 🔥 여기를 자신에게 맞게 변경!
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
     const form = document.getElementById('postForm');
     const postList = document.getElementById('postList');
 
-    form.addEventListener('submit', function (e) {
+    // 글 등록
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const title = document.getElementById('title').value.trim();
       const content = document.getElementById('content').value.trim();
 
-      if (title && content) {
-        const post = document.createElement('div');
-        post.className = 'post';
+      await db.collection('posts').add({
+        title: title,
+        content: content,
+        date: new Date()
+      });
 
-        post.innerHTML = `
-          <h3>${title}</h3>
-          <p>${content}</p>
-        `;
-
-        postList.prepend(post); // 최신 글이 위에 나오도록
-
-        form.reset(); // 입력칸 초기화
-      }
+      form.reset();
+      loadPosts();
     });
+
+    // 글 불러오기
+    async function loadPosts() {
+      postList.innerHTML = '';
+
+      const snapshot = await db.collection('posts')
+        .orderBy('date', 'desc')
+        .get();
+
+      snapshot.forEach(doc => {
+        const post = doc.data();
+        const div = document.createElement('div');
+        div.className = 'post';
+        div.innerHTML = `<h3>${post.title}</h3><p>${post.content}</p>`;
+        postList.appendChild(div);
+      });
+    }
+
+    loadPosts();
   </script>
 </body>
 </html>
